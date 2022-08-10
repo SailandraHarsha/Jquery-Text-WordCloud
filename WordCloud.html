@@ -1,0 +1,175 @@
+<html>
+    <head>
+        <title>Word Cloud</title>
+        <script src="Resources/bootstrap/js/jquery-3.3.1.js"></script>
+        <script src="Resources/bootstrap/js/popper.min.js"></script>
+        <script src="Resources/bootstrap/js/bootstrap.min.js"></script>
+        <link href="Resources/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+        <script src="Resources/WordCloud/jQWCloudv3.1.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                $(document).on('click', '#spnWordPlus', function () {
+                $('#spnWordValue').text((parseInt($('#spnWordValue').text()) + 1));
+                if ($('#spnWordValue').text() >= 100) {
+                    $('#spnWordValue').text(100);
+                }
+                minimumCntForCloud = $('#spnWordValue').text();
+                GetWordFrequency();
+            });
+            $(document).on('click', '#spnWordMinus', function () {
+                $('#spnWordValue').text((parseInt($('#spnWordValue').text()) - 1));
+                if ($('#spnWordValue').text() <= 2) {
+                    $('#spnWordValue').text(2);
+                }
+                minimumCntForCloud = $('#spnWordValue').text();
+                GetWordFrequency();
+            });
+            GetWordFrequency();
+            });
+            function cleanString(str) {
+            return str.replace(/[^\w\s]|_/g, '').replace(/\s+/g, ' ').toLowerCase();
+        }
+
+        function getWords(str) {
+            return cleanString(str).match(/\S+/g) || [];
+        }
+
+        function wordMap(str) {
+            return getWords(str).reduce(function (map, word) {
+                map[word] = (map[word] || 0) + 1;
+                return map;
+            }, {});
+        }
+
+        function mapToTuples(map) {
+            return Object.keys(map).map(function (key) {
+                return [key, map[key]];
+            });
+        }
+
+        function mapToSortedTuples(map, sortFn, sortOrder) {
+            return mapToTuples(map).sort(function (a, b) {
+                return sortFn.call(undefined, a, b, sortOrder);
+            });
+        }
+
+        function wordFrequency(str) {
+            return mapToSortedTuples(wordMap(str), function (a, b, order) {
+                if (b[1] > a[1]) {
+                    return order[1] * -1;
+                } else if (a[1] > b[1]) {
+                    return order[1] * 1;
+                } else {
+                    return order[0] * (a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0));
+                }
+            }, [1, -1]);
+        }
+
+        function toTable(data, headers) {
+            return $('<table>').append($('<thead>').append($('<tr>').append(headers.map(function (header) {
+                return $('<th>').html(header);
+            })))).append($('<tbody>').append(data.map(function (row) {
+                return $('<tr>').append(row.map(function (cell) {
+                    return $('<td>').html(cell);
+                }));
+            })));
+        }
+
+        function PreProcessDiv(str) {
+            var ReplaceStopWords = [".", "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "could", "did", "do", "does", "doing", "down", "during", "each", "few", "for", "from", "further", "had", "has", "have", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "it", "it's", "its", "itself", "let's", "me", "more", "most", "my", "myself", "nor", "of", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same", "she", "she'd", "she'll", "she's", "should", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "will", "whom", "why", "why's", "with", "would", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "\\n", "  ", "\n"];
+            var re = new RegExp("\\b(?:" + ReplaceStopWords.join("|") + ")\\b\\s*", "gi");
+            str = str.replace(re, ' ');
+            str = str.replace(/[0-9]/g, "");
+            return str;
+        }
+        var minimumCntForCloud = 2;
+        var minimumlengthForCloud = 4;
+        function ArrayToObject(arr) {
+            var obj = [];
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i][1] >= minimumCntForCloud && arr[i][0].length >= minimumlengthForCloud) {
+                    obj.push({ 'word': arr[i][0], 'weight': arr[i][1] });
+                }
+            }
+            return obj
+        }
+
+        function GetWordFrequency() {
+
+            var htmlcode = $('#divText').text();
+            //var brregx = /<br[^>]*>/gi;
+            //htmlcode = htmlcode.replace(brregx, " ");
+            //htmlcode = htmlcode.replace(/\\/g, "");
+            //var OnlyText = $(htmlcode).text();
+            var str = PreProcessDiv(htmlcode);
+            var words = ArrayToObject(wordFrequency(str));
+            $("#wordFreq").jQWCloud({
+                words,
+                //cloud_color: 'yellow',		
+                minFont: 10,
+                maxFont: 50,
+                fontOffset: 5,
+                //cloud_font_family: 'Owned',
+                //verticalEnabled: false,
+                padding_left: 1,
+                //showSpaceDIV: true,
+                //spaceDIVColor: 'white',
+                word_common_classes: 'WordClass',
+                word_mouseEnter: function () {
+                    $(this).css("text-decoration", "underline");
+                },
+                word_mouseOut: function () {
+                    $(this).css("text-decoration", "none");
+                },
+                word_click: function () {
+                    alert("You have selected:" + $(this).text());
+                },
+                beforeCloudRender: function () {
+                    date1 = new Date();
+                },
+                afterCloudRender: function () {
+                    var date2 = new Date();
+                    console.log("Cloud Completed in " + (date2.getTime() - date1.getTime()) + " milliseconds");
+                }
+            });
+        }
+        </script>
+    </head>
+    <body>
+        <strong>
+            <span>Minimum Word frequency : </span>
+            <span class="btn btn-dark text-white btn-sm" id="spnWordMinus">-</span>
+            <span id="spnWordValue">2</span>
+            <span class="btn btn-dark text-white btn-sm" id="spnWordPlus">+</span>
+        </strong>
+        <div id="wordFreq" style="height: 200px; width: 98%; background-color: white;"></div>
+        <div class="container-fluid" id="divText" contentEditable="true">
+            Early life and exploits
+
+Shivaji was descended from a line of prominent nobles. India at that time was under Muslim rule: the Mughals in the north and the Muslim sultans of Bijapur and Golconda in the south. All three ruled by right of conquest, with no pretense that they had any obligations toward those who they ruled. Shivaji, whose ancestral estates were situated in the Deccan, in the realm of the Bijapur sultans, found the Muslim oppression and religious persecution of the Hindus so intolerable that, by the time he was 16, he convinced himself that he was the divinely appointed instrument of the cause of Hindu freedom—a conviction that was to sustain him throughout his life.
+
+Collecting a band of followers, he began about 1655 to seize the weaker Bijapur outposts. In the process, he destroyed a few of his influential coreligionists, who had aligned themselves with the sultans. All the same, his daring and military skill, combined with his sternness toward the oppressors of the Hindus, won him much admiration. His depredations grew increasingly audacious, and several minor expeditions sent to chastise him proved ineffective.
+
+When the sultan of Bijapur in 1659 sent an army of 20,000 under Afẕal Khan to defeat him, Shivaji, pretending to be intimidated, enticed the force deep into difficult mountain terrain and then killed Afẕal Khan at a meeting to which he had lured him by submissive appeals. Meanwhile, handpicked troops that had been previously positioned swooped down on the unwary Bijapur army and routed it. Overnight, Shivaji had become a formidable warlord, possessing the horses, the guns, and the ammunition of the Bijapur army.
+
+Alarmed by Shivaji’s rising strength, the Mughal emperor Aurangzeb ordered his viceroy of the south to march against him. Shivaji countered by carrying out a daring midnight raid right within the viceroy’s encampment, in which the viceroy lost the fingers of one hand and his son was killed. Discomfited by this reverse, the viceroy withdrew his force. Shivaji, as though to provoke the Mughals further, attacked the rich coastal town of Surat and took immense booty.
+
+Aurangzeb could hardly ignore so flaunting a challenge and sent out his most prominent general, Mirza Raja Jai Singh, at the head of an army said to number some 100,000 men. The pressure that was exerted by this vast force, combined with the drive and tenacity of Jai Singh, soon compelled Shivaji to sue for peace and to undertake that he and his son would attend Aurangzeb’s court at Agra in order to be formally accepted as Mughal vassals. In Agra, hundreds of miles from their homeland, Shivaji and his son were placed under house arrest, where they lived under the threat of execution.
+
+Escape from Agra
+
+Undaunted, Shivaji feigned illness and, as a form of penance, began to send out enormous baskets filled with sweets to be distributed among the poor. On August 17, 1666, he and his son had themselves carried past their guards in these baskets. His escape, possibly the most thrilling episode in a life filled with high drama, was to change the course of Indian history. His followers welcomed him back as their leader, and within two years he not only had won back all the lost territory but had expanded his domain. He collected tribute from Mughal regions and plundered their rich cities; he reorganized the army and instituted reforms for the welfare of his subjects. Taking a lesson from the Portuguese and English traders who had already gained toeholds in India, he began the building of a naval force; he was the first Indian ruler of his time to use his sea power for trade as well as for defense.
+
+Almost as though prodded by Shivaji’s meteoric rise, Aurangzeb intensified his persecution of Hindus; he imposed a poll tax on them, connived at forcible conversions, and demolished temples, erecting mosques in their places.
+
+Independent sovereign
+
+In the summer of 1674, Shivaji had himself enthroned with great fanfare as an independent sovereign. The suppressed Hindu majority rallied to him as their leader. He ruled his domain for six years, through a cabinet of eight ministers. A devout Hindu who prided himself as the protector of his religion, he broke tradition by commanding that two of his relatives, who had been forcibly converted to Islam, should be taken back into the Hindu fold. Yet even though both Christians and Muslims often imposed their creeds on the populace by force, he respected the beliefs and protected the places of worship of both communities. Many Muslims were in his service. After his coronation, his most noteworthy campaign was in the south, during which he forged an alliance with the sultans and thereby blocked the grand design of the Mughals to spread their rule over the entire subcontinent.
+
+Shivaji had several wives and two sons. His last years were shadowed by the apostasy of his elder son, who, at one stage, defected to the Mughals and was brought back only with the utmost difficulty. The strain of guarding his kingdom from its enemies in the face of bitter domestic strife and discord among his ministers hastened his end. The man that British politician and author Thomas Babington Macaulay (later Baron Macaulay of Rothley) called “the Great Shivaji” died after an illness in April 1680, in the mountain stronghold of Rajgarh, which he had made his capital.
+
+Shivaji breathed new life into a moribund race that for centuries had resigned itself to abject serfdom and led them against Aurangzeb, a powerful Mughal ruler. Above all, in a place and age stained by religious savagery, he was one of few rulers who practiced true religious tolerance.
+        </div>
+       
+    </body>
+</html>
